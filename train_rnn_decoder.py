@@ -223,8 +223,9 @@ def train(epoch):
     if config.decoder_type.lower() == 'ocd':
         Loss.update_temperature(epoch)
     
-    score =  eval(epoch, 'greedy', config.logistic_joint_decoding)
-    score_bs =  eval(epoch, 'beam_search', config.logistic_joint_decoding)
+    score =  eval(epoch, 'greedy', False)
+    score =  eval(epoch, 'greedy', True)
+    #score_bs =  eval(epoch, 'beam_search', config.logistic_joint_decoding)
 
     for metric, value in score.items():
         scores[metric].append(score[metric])
@@ -275,7 +276,7 @@ def eval(epoch, decode_type = 'greedy', logistic_joint_decoding = False):
             seq, score = rescore.logistic_rescore(ret_dict['topk_sequence'], log_output)
             y_vec = E.idx2vec(seq, config.label_set_size, config.label_set_size +1 , True )
             y_rescore.append(y_vec)
-
+    logging("Decode type: {} Logistic joint Decoding: {}".format(decode_type, logistic_joint_decoding))
     logging("Test RNN loss : {:.5f}  \nLog loss :{:.5f}\n".format(total_rnn_loss / total, total_log_loss / total))
     
     

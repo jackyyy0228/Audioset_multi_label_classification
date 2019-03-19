@@ -5,11 +5,11 @@ import numpy as np
 import pickle as pkl
 
 def get_data(config):
-    #X_train, Y_train = pkl.load(open(os.path.join(config.data_path,'train_data.pkl'),'rb'))
+    X_train, Y_train = pkl.load(open(os.path.join(config.data_path,'train_data.pkl'),'rb'))
     X_test, Y_test = pkl.load(open(os.path.join(config.data_path,'test_data.pkl'),'rb'))
-    #X_train = (np.float32(X_train) - 128.) / 128.
+    X_train = (np.float32(X_train) - 128.) / 128.
     X_test = (np.float32(X_test) - 128.) / 128.
-    X_train, Y_train = X_test, Y_test 
+    #X_train, Y_train = X_test, Y_test 
     return X_train, Y_train, X_test, Y_test
 
 ''' 
