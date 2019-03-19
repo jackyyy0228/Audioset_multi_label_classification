@@ -101,10 +101,8 @@ class TopKDecoder(torch.nn.Module):
             hidden = None
         else:
             if isinstance(encoder_hidden, tuple):
-                if self.rnn.bidirectional_encoder:
-                    hidden = tuple([_inflate(h, self.k, 2).view(2,batch_size * self.k,-1) for h in encoder_hidden])
-                else:
-                    hidden = tuple([_inflate(h, self.k, 2).view(1,batch_size * self.k,-1) for h in encoder_hidden])
+                n_layer_bidiretion = encoder_hidden[0].size(0) # n_layer * direction
+                hidden = tuple([_inflate(h, self.k, 2).view(n_layer_bidiretion,batch_size * self.k,-1) for h in encoder_hidden])
             else:
                 # TODO :Should check _inflat dimension 
                 hidden = _inflate(encoder_hidden, self.k, 2).view(1, batch_size * self.k)

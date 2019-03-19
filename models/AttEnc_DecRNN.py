@@ -51,7 +51,7 @@ class AttEnc_DecRNN(nn.Module):
             logit_output = None
 
         if self.decoder.n_layers > 1:
-            _, batch_size, hidden_size = encoder_hidden.shape
+            _, batch_size, hidden_size = encoder_hidden[0].shape
             zero = torch.zeros((self.decoder.n_layers - 1, batch_size, hidden_size),dtype = torch.float32).to(encoder_hidden[0].device)
             encoder_hidden =  tuple([torch.cat((h,zero.clone()), dim = 0) for h in encoder_hidden])
 

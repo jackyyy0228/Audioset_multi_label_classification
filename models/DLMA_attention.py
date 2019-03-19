@@ -84,18 +84,24 @@ class DLMAAddAttention(nn.Module):
 
     def forward(self, output, context):
         # output : (batch, de_len, output_size)
-        # context : (batch, time_steps, 2* hidden_unit)
+        # context : (batch, en_len, 2* hidden_unit)
         # Return:
-        # output :  (batch, class_num * 2)
+        # out :  (batch, class_num * 2)
         midpoint = context.shape[2] // 2
         emb1, emb2 = context[:,:,:midpoint], context[:,:,midpoint:]
-        # transform to (batch, output_size,time_step,1)
+        # transform to (batch, output_size, en_len,1)
         emb1 = emb1.transpose(1,2).unsqueeze(3)
         emb2 = emb2.transpose(1,2).unsqueeze(3)
-        
+         
         batch_size, de_len, output_size = output.shape
-        # TODO: do not support de_len > 1       
-        output1 = self.att(emb1 + output.view((batch_size, output_size,1,1)))
-        output2 = self.att(emb2 + output.view((batch_size, output_size,1,1)))
-        out = torch.cat((output1,output2),dim = 1).unsqueeze(1)
+        en_len = context.size(1)
+        # Transorm emb1 to (batch_size*de_len, output_size, en_len, 1)
+        emb1 = emb1.repeat([1,de_len,1,1]).view(batch_size*de_len, output_size, en_len, 1)
+        emb2 = emb2.repeat([1,de_len,1,1]).view(batch_size*de_len, output_size, en_len, 1)
+        output = output.contiguous().view(batch_size * de_len, output_size,1,1).repeat([1,1,en_len,1])
+        # Input of att: (batch * de_len, output_size, en_len,1)
+        output1 = self.att(emb1 + output)
+        output2 = self.att(emb2 + output)
+        out = torch.cat((output1,output2),dim = 1).view(batch_size, de_len, -1)
+        # out : (batch, de_len, class_num * 2 )
         return out, None

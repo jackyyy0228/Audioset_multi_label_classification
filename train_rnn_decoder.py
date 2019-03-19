@@ -99,12 +99,12 @@ decoder = decoder_rnn.DecoderRNN(vocab_size = config.label_set_size + 2, max_len
 model = AttEnc_DecRNN.AttEnc_DecRNN(encoder, decoder)
 
 ## Loss
-if config.decoder_type.lower() == 'ocd':
+if config.loss_type.lower() == 'ocd':
     Loss = OCDLosses(config.label_set_size + 1, config.OCD_temperature_start,
                         config.OCD_temperature_end, config.OCD_final_hard_epoch)
-elif config.decoder_type.lower() == 'vanilla':
+elif config.loss_type.lower() == 'vanilla':
     Loss = CELosses(config.label_set_size + 1)
-elif config.decoder_type.lower() == 'order_free':
+elif config.loss_type.lower() == 'order_free':
     Loss = OrderFreeLosses(config.label_set_size + 1)
 
 # Restore
@@ -166,7 +166,7 @@ def train(epoch):
         scheduler.step()
         print("Decaying learning rate to %g" % scheduler.get_lr()[0])
 
-    if config.decoder_type.lower() == 'vanilla':
+    if config.loss_type.lower() == 'vanilla':
         if epoch > config.teacher_forcing_final_epoch:
             teacher_forcing_ratio = config.teacher_forcing_ratio_end 
         else:
@@ -191,10 +191,10 @@ def train(epoch):
         candidates = None
         label_sets = label_set_vec.clone()
         
-        if config.decoder_type.lower() == 'vanilla':
+        if config.loss_type.lower() == 'vanilla':
             target_variable = label_set_rnn
             label_sets = label_set_rnn
-        elif config.decoder_type.lower() == 'order_free':
+        elif config.loss_type.lower() == 'order_free':
             candidates = label_set_vec.clone()
 
         decoder_outputs, decoder_hidden, ret_dict, log_output = model(items, target_variable = target_variable,
@@ -220,7 +220,7 @@ def train(epoch):
     logging(" Epoch: %3d, updates: %8d\n" % (epoch, updates))
     logging("Training loss : {:.5f} \nLog loss : {:.5f}\n".format(total_rnn_loss / total, total_log_loss / total))
     
-    if config.decoder_type.lower() == 'ocd':
+    if config.loss_type.lower() == 'ocd':
         Loss.update_temperature(epoch)
     
     score =  eval(epoch, 'greedy', False)
@@ -255,7 +255,7 @@ def eval(epoch, decode_type = 'greedy', logistic_joint_decoding = False):
         
         decoder_outputs, decoder_hidden, ret_dict, log_output = eval_model(items, logistic_joint_decoding = logistic_joint_decoding)
         
-        if config.decoder_type.lower() == 'vanilla':
+        if config.loss_type.lower() == 'vanilla':
             label_sets = label_set_rnn
         else:
             label_sets = label_set_vec
@@ -276,7 +276,7 @@ def eval(epoch, decode_type = 'greedy', logistic_joint_decoding = False):
             seq, score = rescore.logistic_rescore(ret_dict['topk_sequence'], log_output)
             y_vec = E.idx2vec(seq, config.label_set_size, config.label_set_size +1 , True )
             y_rescore.append(y_vec)
-    logging("Decode type: {} Logistic joint Decoding: {}".format(decode_type, logistic_joint_decoding))
+    logging("Decode type: {} , Logistic joint Decoding: {}\n".format(decode_type, logistic_joint_decoding))
     logging("Test RNN loss : {:.5f}  \nLog loss :{:.5f}\n".format(total_rnn_loss / total, total_log_loss / total))
     
     
