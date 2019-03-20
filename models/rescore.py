@@ -1,11 +1,11 @@
 import torch
 
 def logistic_rescore(top_k_symbols, logistic_output):
-    # top_k_symbols : seq_len [batch_size * k]
+    # top_k_symbols : seq_len [batch_size * k,1]
     # logistic_output : [batch_size, label_set_size] 
     # eos_id : label_set_size + 1
     # sos_id : label_set_size
-    batch_size, k = top_k_symbols[0].shape
+    batch_size, k, _ = top_k_symbols[0].shape
     label_set_size = logistic_output.shape[1]
     seq_len = len(top_k_symbols)
     ##
@@ -20,8 +20,8 @@ def logistic_rescore(top_k_symbols, logistic_output):
     
     for t in range(0, seq_len):
         # score[i][j] += logitstic_output[i][top_k_symbols[t][i][j]]
-        score += logistics.gather(1,top_k_symbols[t])
+        score += logistics.gather(1,top_k_symbols[t].squeeze(2))
     top1 = score.topk(1)[1]
     #symbols[i][0] = time_symbols[i][top1[i][0]]
-    sequence = [time_symbols.gather(1,top1).squeeze() for time_symbols in top_k_symbols] # seq_len [batch_size]
+    sequence = [time_symbols.squeeze(2).gather(1,top1).squeeze(1) for time_symbols in top_k_symbols] # seq_len [batch_size]
     return sequence, score

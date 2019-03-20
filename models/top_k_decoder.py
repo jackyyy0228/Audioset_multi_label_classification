@@ -247,7 +247,7 @@ class TopKDecoder(torch.nn.Module):
             # record the back tracked results
             step_scores.append(current_score)
             outputs.append(current_output)
-            output_symbols.append(current_symbol)
+            output_symbols.append(current_symbol.unsqueeze(2))
             #x = current_symbol[0][0].item()
             #print(x)
             #print(current_output[0][0][x])
@@ -275,7 +275,7 @@ class TopKDecoder(torch.nn.Module):
             metadata['topk_score'] = (sequence_scores ).view(batch_size, self.k) # [batch_size * k]
         elif self.beam_score_type == 'mean':
             metadata['topk_score'] = (sequence_scores / lengths).view(batch_size, self.k) # [batch_size * k]
-        metadata['topk_sequence'] = output_symbols # seq_len [batch_size * k] 
+        metadata['topk_sequence'] = output_symbols # seq_len [batch_size * k,1] 
         metadata['topk_length'] = lengths.view(batch_size, self.k) # seq_len [batch_size * k] 
         metadata['step_score'] = step_scores # seq_len [batch_size * k]
         metadata['sequence'] = [seq[:,0] for seq in output_symbols] # seq_len [batch_size] 

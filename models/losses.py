@@ -27,10 +27,10 @@ class OCDLosses(nn.Module):
         # some details:
         # directly minize specific score
         # give sos low score
-        outputs = torch.stack(outputs).squeeze()
+        outputs = torch.stack(outputs)
         targets = targets.to(outputs.device)
         
-        output_symbols = torch.stack(output_symbols).squeeze()
+        output_symbols = torch.stack(output_symbols).squeeze(2)
         seq_len, batch_size, label_size = outputs.shape
 
         outputs_one_hot = utils.to_one_hot(output_symbols, label_size).to(outputs.device)
@@ -76,10 +76,10 @@ class COTLosses(nn.Module):
         super(COTLosses,self).__init__()
         self.eos_id = eos_id
     def __call__(self, outputs, output_symbols, targets):
-        outputs = torch.stack(outputs).squeeze()
+        outputs = torch.stack(outputs)
         targets = targets.to(outputs.device)
         
-        output_symbols = torch.stack(output_symbols).squeeze()
+        output_symbols = torch.stack(output_symbols).squeeze(2)
         seq_len, batch_size, label_size = outputs.shape
 
         outputs_one_hot = utils.to_one_hot(output_symbols, label_size).to(outputs.device)
@@ -122,7 +122,7 @@ class CELosses(nn.Module):
         outputs: (seq_len, batch_size, label_size)
         label: (batch_size, seq_len)
         '''
-        outputs = torch.stack(outputs).squeeze()
+        outputs = torch.stack(outputs)
 
         seq_len, batch_size, label_size = outputs.shape
         
@@ -151,6 +151,7 @@ class OrderFreeLosses(nn.Module):
     def __init__(self, eos_id):
         super(OrderFreeLosses, self).__init__()
         self.eos_id = eos_id
+        self.criterion = nn.NLLLoss()
 
     def __call__(self, outputs, output_symbols, label):
         '''
@@ -161,19 +162,19 @@ class OrderFreeLosses(nn.Module):
         # some details:
         # directly minize specific score
         # give sos low score
-        outputs = torch.stack(outputs).squeeze()
+        outputs = torch.stack(outputs)
         
-        output_symbols = torch.stack(output_symbols).squeeze()
+        output_symbols = torch.stack(output_symbols).squeeze(2)
         
         seq_len, batch_size, label_size = outputs.shape
-
-        outputs_one_hot = utils.to_one_hot(output_symbols, label_size).to(outputs.device)
+        
+        outputs = outputs.transpose(0,1) # batch_size * seq_len * label_size
+        outputs = outputs.transpose(1,2) # batch_size * label_size * seq_len
         
         mask = torch.ones((seq_len, batch_size), dtype = torch.float32, device = outputs.device)
         mask[1:,:] = 1 - output_symbols[:-1,:].data.eq(self.eos_id).float() 
         
-        losses =  - torch.mean(outputs_one_hot * outputs, dim =2) * mask 
-        
+        losses = self.criterion(outputs, output_symbols.transpose(0,1)) * mask
         loss = torch.sum(losses) / torch.sum(mask)
         
         return loss

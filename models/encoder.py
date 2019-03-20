@@ -188,7 +188,7 @@ class DLMAEncoder(nn.Module):
         emb_layers = self.emb(input, return_layers=True)
         contexts = (self.rnn_att(emb_layers[-1]), self.rnn_att(emb_layers[-2]))
         #(samples_num, time_steps, 2* hidden_units)
-        contexts = torch.cat(contexts, dim = 1).transpose(1,2).squeeze()
+        contexts = torch.cat(contexts, dim = 1).transpose(1,2).squeeze(-1)
 
         # (samples_num, classes_num)
         output1 = self.attention(emb_layers[-1])

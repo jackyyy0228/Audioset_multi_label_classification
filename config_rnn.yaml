@@ -36,7 +36,7 @@ decoder_n_layer: 2
 use_attention: True
 decoder_max_len: 17
 add_mask: True
-decoder_sampling_type: 'max' # max or sample or order_free
+decoder_sampling_type: 'max' # max or sample 
 teacher_forcing_ratio_start: 1.0
 teacher_forcing_ratio_end: 0.5
 teacher_forcing_final_epoch: 7

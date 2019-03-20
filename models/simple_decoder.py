@@ -30,15 +30,14 @@ class SimpleDecoder(nn.Module):
         else:
             sample_softmax = softmax
         
-        if self.sampling_type == 'max':
+        if candidates is not None:
+            # Can be used only in step_forward
+            candidates = candidates.view(batch_size, de_len, self.output_size)
+            symbols = (softmax * candidates).topk(1, dim=2)[1]
+        elif self.sampling_type == 'max':
             symbols = sample_softmax.topk(1, dim=2)[1]
 
         elif self.sampling_type == 'sample':
             symbols = torch.distributions.Categorical(sample_softmax).sample()
             symbols = symbols.unsqueeze(2)
-        elif self.sampling_type == 'order_free':
-            # Can be used only in step_forward
-            candidates = candidates.view(batch_size, de_len, self.output_size)
-            symbols = (softmax * candidates).topk(1, dim=2)[1]
-
         return softmax, symbols

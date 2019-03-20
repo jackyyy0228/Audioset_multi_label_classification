@@ -222,7 +222,6 @@ def train(epoch):
     
     if config.loss_type.lower() == 'ocd':
         Loss.update_temperature(epoch)
-    
     score =  eval(epoch, 'greedy', False)
     score =  eval(epoch, 'greedy', True)
     #score_bs =  eval(epoch, 'beam_search', config.logistic_joint_decoding)

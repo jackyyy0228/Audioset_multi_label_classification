@@ -160,7 +160,7 @@ class DecoderRNN(BaseRNN):
                     decoder_output, symbols = self.decoder(context, mask, logit_output = logit_output)
                 else:
                     decoder_output, symbols = self.decoder(context, mask, candidates)
-                    candidates -= utils.to_one_hot(symbols.squeeze(), self.output_size).float()
+                    candidates -= utils.to_one_hot(symbols.squeeze(2).squeeze(1), self.output_size).float()
                     is_eos_batch = torch.sum(candidates, dim = 1).eq(0)
                     candidates[:,self.eos_id] = is_eos_batch.float()
 
@@ -173,7 +173,7 @@ class DecoderRNN(BaseRNN):
                 if self.add_mask:
                     # mask is one if a symbol has been predicted
                     # There will be error if loss is nan
-                    mask += utils.to_one_hot(step_symbols.squeeze(), self.output_size).float() 
+                    mask += utils.to_one_hot(step_symbols.squeeze(1), self.output_size).float() 
 
         ret_dict[DecoderRNN.KEY_SEQUENCE] = sequence_symbols
         ret_dict[DecoderRNN.KEY_LENGTH] = lengths.tolist()
