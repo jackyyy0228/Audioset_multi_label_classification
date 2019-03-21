@@ -7,8 +7,8 @@ label_order: 'index'  # index, freq_first, rare_first
 #Training
 net_seed : 4325
 #log: './exp/ocd_baseline_addAtt'
-log: './exp/test'
-epoch: 15
+log: './exp/ocd_adam0.0005_woschedule'
+epoch: 25
 train_batch_size: 500
 test_batch_size: 50
 module_type: 'multi_attention'
@@ -22,10 +22,10 @@ logistic_joint_decoding: True
 logistic_weight: 1
 #Optimizer
 optim: 'adam'
-learning_rate: 0.001
+learning_rate: 0.0005
 max_grad_norm: 10
 learning_rate_decay: 0.5
-schedule: True
+schedule: False
 start_decay_at: 5
 #RNN_decoder
 loss_type: 'vanilla' # vanilla OCD order_free

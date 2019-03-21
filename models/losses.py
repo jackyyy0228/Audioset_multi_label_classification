@@ -5,7 +5,7 @@ from torch.autograd import Variable
 import models.utils as utils
 
 def logit_loss(outputs, labels):
-    losses = labels * torch.log(outputs) + (1-labels) * torch.log(1-outputs)
+    losses = labels * torch.log(outputs + 1e-8) + (1-labels) * torch.log(1-outputs + 1e-8)
     losses = - torch.mean(losses)
     return losses 
 
