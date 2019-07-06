@@ -140,7 +140,7 @@ class DecoderRNN(BaseRNN):
             decoder_input = inputs[:,:-1]
             context, decoder_hidden, attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs)
             decoder_output, symbols = self.decoder(context)
-            decoder_output = decoder_output.log()
+            decoder_output = (decoder_output + 1e-8).log()
 
             for di in range(decoder_output.size(1)):
                 step_output = decoder_output[:, di, :]

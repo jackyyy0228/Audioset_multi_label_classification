@@ -4,68 +4,63 @@ from scipy import stats
 from sklearn.metrics import average_precision_score,roc_auc_score
 
 
-EPS=0.0000001
-def score_to_pred(y_score, threshold, top_k):
-    if top_k < len(y_score[0]):
-        ## If not in top_k, set to 0
-        last = len(y_score[0]) - top_k
-        y_score_temp = []
-        for vec in y_score:
-            vec2 = np.array(vec)
-            index = vec2.argsort()[:last]
-            vec2[index] = 0
-            y_score_temp.append(vec2)
-        y_score_temp = np.array(y_score_temp)
-    else:
-        y_score_temp = y_score
-    y_pred = np.where(y_score_temp > threshold,1,0)
+EPS=1e-10
+def score_to_pred(y_score, threshold):
+    y_pred = np.where(y_score > threshold,1,0)
     return y_pred
     
-def cal_f1(y, y_score, threshold = 0.5, top_k = 200):
+def cal_f1(y, y_score, threshold = 0.5):
     # Shape : n_image, n_class
     n_image,n_class = y.shape
     TP = np.zeros(n_class)
     FP = np.zeros(n_class)
     FN = np.zeros(n_class)
-    if top_k < len(y_score[0]):
-        ## If not in top_k, set to 0
-        last = len(y_score[0]) - top_k
-        y_score_temp = []
-        for vec in y_score:
-            vec2 = np.array(vec)
-            index = vec2.argsort()[:last]
-            vec2[index] = 0
-            y_score_temp.append(vec2)
-        y_score_temp = np.array(y_score_temp)
-    else:
-        y_score_temp = y_score
-    y_head = score_to_pred(y_score,threshold,top_k)
+    
+    y_head = score_to_pred(y_score,threshold)
     for i in range(n_class):
         TP[i] = np.sum(np.where( (y[:,i]+y_head[:,i])/2 == np.ones(n_image),1,0))
         FP[i] = np.sum(y_head[:,i]) - TP[i]
         FN[i] = np.sum(y[:,i]) - TP[i]
     return TP,FP,FN
 
-def macro_f1(y, y_score, threshold = 0.5,top_k = 200):
+def macro_f1(y, y_score, threshold = 0.5):
     n_image,n_class = y.shape
-    TP,FP,FN = cal_f1(y, y_score,threshold,top_k)
+    TP,FP,FN = cal_f1(y, y_score,threshold)
     precisions = [TP[i]/(TP[i] + FP[i]+EPS) for i in range(n_class)]
     recalls = [TP[i]/(TP[i] + FN[i]+EPS) for i in range(n_class)]
     p = np.mean(precisions)
     r = np.mean(recalls)
     return float(p),float(r),float(2*p*r/(p+r+EPS))
     
-def micro_f1(y, y_score,threshold = 0.5,top_k = 200):
+def micro_f1(y, y_score,threshold = 0.5):
     n_image,n_class = y.shape
-    TP,FP,FN = cal_f1(y, y_score,threshold,top_k)
+    TP,FP,FN = cal_f1(y, y_score,threshold)
     p = np.sum(TP) / ( np.sum(TP) + np.sum(FP) + EPS )
     r = np.sum(TP) / ( np.sum(TP) + np.sum(FN) + EPS )
     return float(p),float(r),float(2*p*r/(p+r+EPS))
 
-def hamming_loss(y, y_score, threshold = 0.5, top_k = 200):
-    y_pred = score_to_pred(y_score, threshold, top_k)
+def hamming_loss(y, y_score, threshold = 0.5):
+    y_pred = score_to_pred(y_score, threshold)
     corrects = np.where(y == y_pred,1,0)
     return 1 - float(np.sum(corrects)) / len(y.flatten())
+
+def cal_subset_acc(y, y_score, threshold = 0.5):
+    y_pred = score_to_pred(y_score, threshold)
+    wrongs = np.where(y == y_pred,0,1)
+    subset_wrongs = np.sum(wrongs, axis = 1)
+    subset_accs = np.where(subset_wrongs == 0,1,0)
+    return np.sum(subset_accs) / len(subset_accs) 
+
+def cal_example_f1(y, y_score, threshold = 0.5):
+    y = y.transpose()
+    y_score = y_score.transpose()
+    
+    n_image,n_class = y.shape
+    TP,FP,FN = cal_f1(y, y_score,threshold)
+    precisions = [TP[i]/(TP[i] + FP[i]+EPS) for i in range(n_class)]
+    recalls = [TP[i]/(TP[i] + FN[i]+EPS) for i in range(n_class)]
+    f1s = [ 2*recalls[i]*precisions[i] / (recalls[i] + precisions[i] + EPS) for i in range(n_class)]
+    return np.mean(precisions), np.mean(recalls), np.mean(f1s)
 
 def d_prime(auc):
     standard_normal = stats.norm()
@@ -100,14 +95,14 @@ def check_zero_class(y):
 class eval_metrics():
     def __init__(self, train_kinds = [], test_kinds = [], is_split_label = False):
         self.thres = 0.5
-        self.top_k = 200
         metrics = ['hamming_loss','macro_f1','macro_precision',
-                        'macro_recall','micro_f1','micro_precision','micro_recall','map','auc','d_prime','n_zero_class']
+                   'macro_recall','micro_f1','micro_precision',
+                   'micro_recall','map','auc','d_prime','n_zero_class', 
+                   'example_recall','example_precision','example_f1', 'subset_acc']
         self.metrics = [ 'in_train_' + x for x in metrics ]
         self.train_kinds = set([tuple(x) for x in train_kinds])
         self.test_kinds = set([tuple(x) for x in test_kinds])
         self.is_split_label = is_split_label
-
         if self.is_split_label :
             self.in_train_kinds = self.test_kinds.intersection(self.train_kinds)
             self.out_train_kinds =  self.test_kinds.difference(self.train_kinds)
@@ -115,11 +110,11 @@ class eval_metrics():
             self.metrics += [ 'overall_' + x for x in metrics ]
     
     def find_best_thres(self,y, y_score):
-        thres_step = 0.1
+        thres_step = 0.02
         best_thres = 0.
         best_score = 0. 
         y, y_score = np.array(y), np.array(y_score)
-        for i in range(9):
+        for i in range(49):
             thres = thres_step * (i + 1)
             p,r,f1 = micro_f1(y, y_score, threshold=thres)
             if best_score < f1:
@@ -142,13 +137,29 @@ class eval_metrics():
             elif key in self.out_train_kinds:
                 y_out_train.append(label_set)
                 y_score_out_train.append(score_set)
-            #else:
-            #    print("There is an error.")
+            else:
+                print(key)
+                print("There is an error.")
         y_in_train, y_out_train = np.vstack(y_in_train), np.vstack(y_out_train)
+        print(len(y_in_train), len(y_out_train))
         y_score_in_train, y_score_out_train = np.vstack(y_score_in_train), np.vstack(y_score_out_train)
         return y_in_train, y_score_in_train,  y_out_train, y_score_out_train
 
     def compute(self, y, y_score):
+        '''
+        # compare length
+        for l in range(1,10):
+            L = []
+            for idx, y0 in enumerate(y):
+                if np.sum(y0) == l:
+                    L.append(idx)
+            L = np.array(L)
+            print("Length",l,len(L))
+            if len(L) > 1:
+                d = self._compute(y[L], y_score[L])
+                d = { 'in_train_' + k:v for k,v in d.items()}
+                print(self.logging(d))
+        '''
         if self.is_split_label:
             y_in_train, y_score_in_train,  y_out_train, y_score_out_train = self.split_labels(y, y_score)
             d_in_train = self._compute(y_in_train, y_score_in_train)
@@ -178,13 +189,29 @@ class eval_metrics():
         return log
 
     def _compute(self, y, y_score):
-        h_loss = hamming_loss(y, y_score, self.thres, self.top_k)
-        macro_p, macro_r, macro_f1_score = macro_f1(y, y_score, self.thres, self.top_k)
-        micro_p, micro_r, micro_f1_score = micro_f1(y, y_score, self.thres, self.top_k)
+        '''
+        f1s = []
+        idxes = []
+        for idx,(y0,ys0) in enumerate(zip(y,y_score)):
+            if not np.array_equal(y0, ys0):
+                idxes.append(idx)
+            f1s.append(cal_example_f1(y0.reshape(1,-1),ys0.reshape(1,-1))[-1])
+        f1s = np.array(f1s)
+        #idxes = f1s.argsort()[:-int(len(y)*0.844)]
+        idxes = np.array(idxes)
+        y = y[idxes]
+        y_score = y_score[idxes]
+        '''
+        
+        h_loss = hamming_loss(y, y_score, self.thres)
+        macro_p, macro_r, macro_f1_score = macro_f1(y, y_score, self.thres)
+        micro_p, micro_r, micro_f1_score = micro_f1(y, y_score, self.thres)
         map_score = cal_map(y, y_score)
         auc  = cal_auc(y, y_score)
         dprime = d_prime(auc) 
         n_zero_class = check_zero_class(y)
+        ex_p, ex_r, example_f1 = cal_example_f1(y, y_score, self.thres)
+        subset_acc = cal_subset_acc(y, y_score, self.thres)
         d =  {'hamming_loss': h_loss, 
                 'macro_f1': macro_f1_score,
                 'macro_precision': macro_p, 
@@ -195,7 +222,11 @@ class eval_metrics():
                 'map': map_score,
                 'auc': auc,
                 'd_prime': dprime,
-                'n_zero_class':n_zero_class}
+                'n_zero_class':n_zero_class,
+                'example_precision': ex_p, 
+                'example_recall': ex_r,
+                'example_f1':example_f1, 
+                'subset_acc':subset_acc}
         return d
 
     def _logging(self, loss_dict, typ):
@@ -207,10 +238,12 @@ class eval_metrics():
                                                                       d[typ + '_macro_recall'],d[typ + '_macro_f1'])
         log += "Micro precision, recall, f1: {:.3f}, {:.3f}, {:.3f}\n".format(d[typ + '_micro_precision'],
                                                                       d[typ + '_micro_recall'],d[typ + '_micro_f1'])
+        log += "Example precision, recall, f1:{:.3f}, {:.3f}, {:.3f}\n".format(d[typ + '_example_precision'],                                                                                                       d[typ + '_example_recall'],d[typ + '_example_f1'])
         log += "Number of zero class:{}\n".format(d[typ + '_n_zero_class'])
         log += "Map:{:.3f}\n".format(d[typ + '_map'])
         log += "auc:{:.3f}\n".format(d[typ + '_auc'])
         log += "d_prime:{:.3f}\n".format(d[typ + '_d_prime'])
+        log += "Subset accuracy:{:.3f}\n".format(d[typ + '_subset_acc'])
         return log
     def idx2vec(self, y, label_set_size, eos_idx, transpose = False):
         if transpose:
@@ -224,6 +257,29 @@ class eval_metrics():
                 if x < label_set_size:
                     labels[idx][x] = 1
         return labels
+    def idx2label(self, y_pred, vocab ,eos_id):
+        # transform to batch * seq_len
+        if isinstance(y_pred, list):
+            y_pred = torch.stack(y_pred).squeeze().cpu().numpy().transpose()
+        else:
+            y_pred = y_pred[:,1:].cpu().numpy()
+        L = []
+        for sample in y_pred:
+            print(sample)
+            labels = vocab.convertToLabels(sample,eos_id)
+            print(labels)
+            L.append(labels)
+        return L
+    def vec2label(self, y, vocab,eos_id):
+        # transform to batch * seq_len 
+        L = []
+        for sample in y:
+            sample = [idx for idx, x in enumerate(sample) if x == 1]
+            sample.append(eos_id)
+            labels = vocab.convertToLabels(sample,eos_id)
+            L.append(labels)
+        return L
+
         
 def transform_label(label_set):
     # Transform label set from [0,0,1,1,...1...0] to (3,4,...10..)

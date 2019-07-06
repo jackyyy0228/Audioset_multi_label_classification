@@ -303,8 +303,10 @@ def test(load_checkpoint = False):
     if load_checkpoint:
         checkpoints = torch.load(log_path+'best_{}_checkpoint.pt'.format(standard_metric))
         model.load_state_dict(checkpoints['model'])
-    loss_dict = eval(0, 'greedy', config.logistic_joint_decoding)
-    loss_dict_bs = eval(0, 'beam_search', config.logistic_joint_decoding)
+    loss_dict = eval(0, 'greedy', False)
+    loss_dict_bs = eval(0, 'beam_search', False)
+    loss_dict = eval(0, 'greedy', True)
+    loss_dict_bs = eval(0, 'beam_search', True)
     return loss_dict
 
 def save_model(path):

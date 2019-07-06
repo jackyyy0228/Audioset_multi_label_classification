@@ -160,7 +160,7 @@ class TopKDecoder(torch.nn.Module):
                                                           inflated_encoder_outputs)
             softmax_output, _ = self.rnn.decoder(context, logit_output = logit_output)
             
-            log_softmax_output = softmax_output.log().squeeze(1) #bk * v
+            log_softmax_output = (softmax_output+1e-8).log().squeeze(1) #bk * v
             # If doing local backprop (e.g. supervised training), retain the output layer
             if retain_output_probs:
                 stored_outputs.append(log_softmax_output) #bk * v
