@@ -1,0 +1,55 @@
+#Dataset
+data_path: 'data/audioset'
+num_valid: 0
+label_set_size: 527
+data_random_seed: 777
+#Training
+net_seed : 4315
+log: './exp/test'
+#log: './exp/wgan_multi_attention_balance_1d2g'
+epoch: 25
+batch_size: 500
+module_type: 'multi_attention'
+use_dropout: True
+param_init: 0.1
+reg_type: 'l2' #l1, l2
+reg_factor: 0
+add_positional_encoding: True
+#Optimizer
+optim: 'adam'
+learning_rate: 0.001
+max_grad_norm: 10
+learning_rate_decay: 0.5
+schedule: True
+start_decay_at: 5
+#DNN
+dnn_input_size: 1280
+dnn_fc_layers: [512,512,512,512,512]
+#RNN
+#CNN
+#Multi_atttion
+freq_bins: 128
+DLMA_hidden_units: 1024
+#Adversarial training
+num_d_update: 1
+num_g_update: 2
+disc_emb_size: 256
+disc_fc_layers: [512,512,512]
+gp_type: 1
+gp_lambda: 10
+alpha: 10
+feature_extractor_type: 'DLMA'
+detach_feature_extractor: True
+load_feature_extractor: True
+feature_extractor_name: "model"
+use_vdb: True
+Ic: 0.5
+beta_step_size: 0.00001
+#
+#feature_extractor_path: "exp/dnn/best_overall_auc_checkpoint.pt"
+feature_extractor_path: "exp/baseline_positional/best_overall_auc_checkpoint.pt"
+gumbel_sigmoid : True
+gumbel_sigmoid_temperature : 0.9
+gumbel_sigmoid_hard : False
+#Evaluation
+eval_metrics_split_labels: True
