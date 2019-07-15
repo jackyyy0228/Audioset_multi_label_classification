@@ -1,0 +1,62 @@
+#Dataset
+data_path: '/home/jacky/work/audio_set/data/audioset'
+num_valid: 0
+label_set_size: 527
+data_random_seed: 777
+label_order: 'freq_first'  # index, freq_first, rare_first
+#Training
+net_seed : 4325
+#log: './exp/ocd_baseline_addAtt'
+log: './exp/thesis/seq2seq_SS'
+epoch: 10
+train_batch_size: 500
+test_batch_size: 50
+module_type: 'multi_attention'
+param_init: 0.1
+reg_type: 'l2' #l1, l2
+reg_factor: 0
+#Encoder
+encoder_n_layer: 4
+#Logistic head
+logistic_joint_decoding: True
+logistic_weight: 0
+#Optimizer
+optim: 'adam'
+learning_rate: 0.0005
+max_grad_norm: 10
+learning_rate_decay: 0.5
+schedule: False
+start_decay_at: 5
+#RNN_decoder
+loss_type: 'vanilla' # vanilla OCD order_free
+decoder_hidden_size: 512
+dropout_p: 0.5
+input_dropout_p: 0.5
+decoder_n_layer: 2
+use_attention: True
+decoder_max_len: 17
+add_mask: True
+decoder_sampling_type: 'max' # max or sample 
+teacher_forcing_ratio_start: 1.0
+teacher_forcing_ratio_end: 0.7
+teacher_forcing_final_epoch: 10
+beam_size: 6
+beam_score_type: 'sum' # sum or mean
+# Loss
+OCD_temperature_start: 1e-7 #0.5
+OCD_temperature_end: 1e-7
+OCD_final_hard_epoch: 5
+#CNN
+#Multi_atttion
+freq_bins: 128
+DLMA_hidden_units: 1024
+#Evaluation
+eval_metrics_split_labels: False
+
+#OCD:
+#label_order: 'index'  # index, freq_first, rare_first
+#loss_type: 'OCD' # vanilla OCD order_free
+
+#vanilla:
+#label_order: 'freq_first'  # index, freq_first, rare_first
+#loss_type: 'vanilla' # vanilla OCD order_free
