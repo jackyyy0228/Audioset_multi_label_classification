@@ -36,6 +36,12 @@
 	```
 
 	- Codes for training binary relevance model.
+	
+	```
+	python3 train_wgan.py -gpus 0 -config config/config_wgan.yaml
+	```
+
+	- Codes for wgan model
 
 4. test model:
 
